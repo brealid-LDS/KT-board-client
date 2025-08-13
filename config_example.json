@@ -1,0 +1,35 @@
+{
+    "server_url": "http://127.0.0.1:8000",
+    "key_path": "example",
+    "client_group": "Group-2",
+    "client_name": "Client-9",
+
+    "heartbeat_period": 5,
+    "max_jitter": 1.5,
+    "sample_timeout": 2.5,
+
+    "retry": {
+        "max_attempts": 3,
+        "backoff_base": 1.0,
+        "backoff_cap": 10.0
+    },
+
+    "features": {
+        "cpu": true,
+        "mem": true,
+        "gpu": true
+    },
+
+    "gpu": {
+        "indices": [],
+        "backend_preference": ["pynvml", "nvidia-smi"],
+        "nvidia_smi_path": "nvidia-smi"
+    },
+
+    "tls": {
+        "verify": true,
+        "ca_path": ""
+    },
+
+    "log_level": "info"
+}
