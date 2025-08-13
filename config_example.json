@@ -4,7 +4,7 @@
     "client_group": "Group-2",
     "client_name": "Client-9",
 
-    "heartbeat_period": 5,
+    "heartbeat_period": 6,
     "max_jitter": 1.5,
     "sample_timeout": 2.5,
 
