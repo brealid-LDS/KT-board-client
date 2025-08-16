@@ -184,20 +184,26 @@ def _collect_gpu_pynvml(indices: List[int], out_q: Queue):
             if i < 0 or i >= device_count:
                 continue
             h = pynvml.nvmlDeviceGetHandleByIndex(i)
+            name = pynvml.nvmlDeviceGetName(h).decode("utf-8")
             util = pynvml.nvmlDeviceGetUtilizationRates(h).gpu
             meminfo = pynvml.nvmlDeviceGetMemoryInfo(h)
             used_gb = bytes_to_gb(meminfo.used)
             total_gb = bytes_to_gb(meminfo.total)
-            res.append({"usage": clamp01(util / 100.0), "mem": [used_gb, total_gb]})
+            res.append({
+                "name": name,
+                "usage": clamp01(util / 100.0),
+                "mem": [used_gb, total_gb],
+            })
         pynvml.nvmlShutdown()
         out_q.put(res)
     except Exception:
         out_q.put(None)
 
+
 def _collect_gpu_nvsmi(indices: List[int], nvsmi_path: str, out_q: Queue):
     import subprocess
     try:
-        fields = "utilization.gpu,memory.used,memory.total,index"
+        fields = "name,utilization.gpu,memory.used,memory.total,index"
         cmd = [nvsmi_path, f"--query-gpu={fields}", "--format=csv,noheader,nounits"]
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=2.0)
         if proc.returncode != 0:
@@ -207,22 +213,27 @@ def _collect_gpu_nvsmi(indices: List[int], nvsmi_path: str, out_q: Queue):
         rows = []
         for ln in lines:
             parts = [p.strip() for p in ln.split(",")]
-            if len(parts) != 4:
+            if len(parts) != 5:
                 continue
-            util = float(parts[0])  # %
-            used_mb = float(parts[1])
-            total_mb = float(parts[2])
-            idx = int(parts[3])
-            rows.append((idx, util, used_mb, total_mb))
+            name = parts[0]
+            util = float(parts[1])
+            used_mb = float(parts[2])
+            total_mb = float(parts[3])
+            idx = int(parts[4])
+            rows.append((idx, name, util, used_mb, total_mb))
         rows.sort(key=lambda x: x[0])
         selected_idx = set(indices) if indices else None
         res = []
-        for idx, util, used_mb, total_mb in rows:
+        for idx, name, util, used_mb, total_mb in rows:
             if selected_idx is not None and idx not in selected_idx:
                 continue
             used_gb = used_mb / 1024.0
             total_gb = total_mb / 1024.0
-            res.append({"usage": clamp01(util / 100.0), "mem": [used_gb, total_gb]})
+            res.append({
+                "name": name,
+                "usage": clamp01(util / 100.0),
+                "mem": [used_gb, total_gb],
+            })
         out_q.put(res)
     except Exception:
         out_q.put(None)
